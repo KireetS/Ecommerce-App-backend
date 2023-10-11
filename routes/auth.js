@@ -113,11 +113,10 @@ router.post(
 //Update USER
 router.put(
   "/update",
-  fetchUser, // Middleware to fetch the authenticated user
-  upload.single("profileImage"), // Add this middleware to handle file upload
+  fetchUser,
+  upload.single("profileImage"),
   async (req, res) => {
     try {
-      // Fetch the user's data from the database using req.user.id
       const user = await User.findById(req.user.id);
 
       if (!user) {
@@ -128,7 +127,6 @@ router.put(
       const updatedUserData = {
         name,
         email,
-        password,
       };
 
       if (req.file) {
@@ -146,14 +144,11 @@ router.put(
         updatedUserData.profileImage = req.file.filename;
       }
 
-      // Update the user's information in the database
       const updatedUser = await User.findByIdAndUpdate(
         req.user.id,
         updatedUserData,
         { new: true }
       );
-
-      // Generate a new token with updated user data if needed
 
       res.json({
         msg: "done successfully",
@@ -165,7 +160,7 @@ router.put(
     }
   }
 );
-//fetchUser
+
 router.get("/getuser", fetchUser, async (req, res) => {
   try {
     let user = await User.findById(req.user.id).select("-password");

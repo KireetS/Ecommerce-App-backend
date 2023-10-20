@@ -106,7 +106,7 @@ router.post(
       }
     }
 
-    res.send({ error: result.array() });
+    res.status(400).send({ error: result.array() });
   }
 );
 

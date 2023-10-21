@@ -8,6 +8,7 @@ const multer = require("multer");
 const fetchUser = require("../middleware/fetchUser");
 const { body, validationResult } = require("express-validator");
 const fs = require("fs");
+const nodemailer = require("nodemailer");
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "uploads");
@@ -170,4 +171,64 @@ router.get("/getuser", fetchUser, async (req, res) => {
     console.error("error getting users  ", err);
   }
 });
+
+router.post("/reset", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: "No such email exists !" });
+    }
+    const data = {
+      user: {
+        id: user.id,
+      },
+    };
+    console.log(data);
+    let token = jwt.sign(data, process.env.SECRET);
+
+    let transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: "singhkireet5@gmail.com",
+        pass: "miwbtstcbnspqctv",
+      },
+    });
+
+    let mailOptions = {
+      from: "admin@ecomweb.com",
+      to: email,
+      subject: "Reset Password ",
+      text: `go to this link to reset password : http://localhost:5173/reset-password/${token}  `,
+    };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log("Email sent: " + info.response);
+      }
+      res.json({ message: "email sent ", token: token });
+    });
+  } catch (err) {
+    console.error("error is ", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+router.post("/change/:token", async (req, res) => {
+  try {
+    const { token } = req.params;
+    const data = jwt.verify(token, process.env.SECRET);
+    const { id } = data.user;
+    const { password } = req.body;
+    let secPass = await bcrypt.hash(password, 10);
+    await User.findByIdAndUpdate(id, { password: secPass });
+    res.json({ message: "user password updated " });
+  } catch (err) {
+    console.error("error is ", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 module.exports = router;
